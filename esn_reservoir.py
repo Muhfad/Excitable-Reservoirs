@@ -72,14 +72,14 @@ def phi(y, theta = 0.5, delta = delta):
     epsilon = delta/8
     return 1 / (1 +  np.exp(-1/epsilon * (y - theta)))
 
-def propagate(init_cond, u, W_r, W_in):
+def propagate(init_cond, u, W_r, W_in, stepsize = 1):
     m, _ = u.shape
     n = W_r.shape[0]
     x_now = init_cond
     curr_reservoir_state = np.zeros((m, n))
     itenirary = np.zeros(m, dtype = np.int16)
     for j in range(m):
-        x_n = 0.0*x_now + np.matmul(phi(x_now), W_r.T) + np.matmul(u[j, :], W_in.T)
+        x_n = (1 - stepsize)*x_now + np.matmul(phi(x_now), W_r.T) + np.matmul(u[j, :], W_in.T)
         # finds the location of the equillibrium that the state is closest to
         curr_reservoir_state[j, :] = x_n
         # print(np.argmax(x_n))
@@ -145,14 +145,14 @@ def prediction(U, W_r, W_in, init_cond):
 
 #------------------------------------------------------------------------
 # Using itenararies instead of the entire state vector
-def propagate_itin(init_cond, u, W_r, W_in):
+def propagate_itin(init_cond, u, W_r, W_in, stepsize = 0.2):
     m, _ = u.shape
     n = W_r.shape[0]
     x_now = init_cond
     curr_reservoir_state = np.zeros((m, n))
     itenirary = np.zeros(m, dtype = np.int16)
     for j in range(m):
-        x_n = 0.0*x_now + np.matmul(phi(x_now), W_r.T) + np.matmul(u[j, :], W_in.T)
+        x_n = (1 - stepsize)*x_now + np.matmul(phi(x_now), W_r.T) + np.matmul(u[j, :], W_in.T)
         # finds the location of the equillibrium that the state is closest to
         itenirary[j] = np.argmax(x_n)
         # print(np.argmax(x_n))
