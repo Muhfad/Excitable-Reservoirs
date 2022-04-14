@@ -62,7 +62,37 @@ y_test_pred = model.predict(X_test)
 accuracy(y_test, y_test_pred)
 
 #%%
-# without reservoir
+# -------------------------------------------------------
+# Using the iteneraty instead of the entire state vector
+init_cond = np.zeros(A.shape[0])
+init_cond[0] = 1
+X, cache = reservoir_itin(u_train, A, init_cond=init_cond)
+
+#%%
+from sklearn.linear_model import LogisticRegression
+
+model = LogisticRegression(max_iter = 2000)
+model.fit(X, y_train)
+
+#%%
+# logisticRegression.predict(x_test[0].reshape(1,-1)
+def accuracy(y, y_pred):
+    return sum(y==y_pred)/y.shape[0]
+
+y_pred = model.predict(X)
+#%%
+accuracy(y_pred, y_train)
+#%%
+W_r, W_in, init_cond = cache
+X_test = prediction_itin(u_test, W_r, W_in, init_cond)
+y_test_pred = model.predict(X_test)
+
+#%%
+accuracy(y_test, y_test_pred)
+
+#%%
+#------------------------------------------------------------
+#  without reservoir
 N, m, n = u_train.shape
 lr_u_train = u_train.reshape(-1, m*n)
 lr_model = LogisticRegression(max_iter=1000)

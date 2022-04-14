@@ -81,7 +81,6 @@ def propagate(init_cond, u, W_r, W_in):
     for j in range(m):
         x_n = 0.0*x_now + np.matmul(phi(x_now), W_r.T) + np.matmul(u[j, :], W_in.T)
         # finds the location of the equillibrium that the state is closest to
-        itenirary[j] = np.argmax(x_n)
         curr_reservoir_state[j, :] = x_n
         # print(np.argmax(x_n))
         # print(p)
@@ -141,4 +140,65 @@ def prediction(U, W_r, W_in, init_cond):
 
 # %%
 
+# %%
+
+
+#------------------------------------------------------------------------
+# Using itenararies instead of the entire state vector
+def propagate_itin(init_cond, u, W_r, W_in):
+    m, _ = u.shape
+    n = W_r.shape[0]
+    x_now = init_cond
+    curr_reservoir_state = np.zeros((m, n))
+    itenirary = np.zeros(m, dtype = np.int16)
+    for j in range(m):
+        x_n = 0.0*x_now + np.matmul(phi(x_now), W_r.T) + np.matmul(u[j, :], W_in.T)
+        # finds the location of the equillibrium that the state is closest to
+        itenirary[j] = np.argmax(x_n)
+        # print(np.argmax(x_n))
+        # print(p)
+        x_now = x_n
+    # print(itenirary)
+    return itenirary
+
+
+def reservoir_itin(U, A, init_cond = None):
+    '''
+    propagates the discretize CTRNN using forward euler with step size = time constant = 1. 
+    
+    '''
+    # this is to make sure that we get the same random initialisations
+    np.random.seed(2022)
+
+
+    N, m, k = U.shape
+
+    W_r, W_in = weight(A, k)
+    n = A.shape[0]
+    m = W_in.shape[1]
+    if init_cond is None:
+            init_cond = np.random.uniform(size = n)
+
+    # one hot vector encoding which equillibra was visited at time n
+    reservoir_itin = np.zeros((N, m))
+
+
+
+    for i in range(N):
+        u = U[i, :, :]
+        reservoir_itin[i, :] = propagate_itin(init_cond, u, W_r, W_in)
+    cache = W_r, W_in, init_cond
+    return reservoir_itin, cache
+
+def prediction_itin(U, W_r, W_in, init_cond):
+
+    N = U.shape[0]
+    n = W_r.shape[0]
+    m = W_in.shape[1]
+    reservoir_itin = np.zeros((N, m))
+    for i in range(N):
+        u = U[i, :, :]
+        reservoir_itin[i, :] = propagate_itin(init_cond, u, W_r, W_in)
+
+    return reservoir_itin
 # %%
