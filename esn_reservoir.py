@@ -38,7 +38,7 @@ Approach:
 from graph_generator import graph
 import numpy as np
 
-delta = 0.4
+delta = 0.35
 
 def params(delta = delta, theta = 0.5):
 
@@ -64,6 +64,19 @@ def weight(A, n_input, delta=delta):
 
     return W_r, W_in
 
+# piecewise affine nonlinearity
+def phi_piecewise(y, theta = 0.5, delta = delta):
+    '''
+    This is the piecewise affine function (3)
+    '''
+    epsilon = delta/8
+    if y - theta < -2*epsilon:
+        return 0
+    elif y - theta > 2*epsilon:
+        return 1
+    return (y - theta)/(4*epsilon) + 0.5
+# vectorize the fucntion to take its input as an array
+phi_piecewise = np.vectorize(phi_piecewise)
 
 def phi(y, theta = 0.5, delta = delta):
     '''
@@ -79,7 +92,7 @@ def propagate(init_cond, u, W_r, W_in, stepsize = 1):
     curr_reservoir_state = np.zeros((m, n))
     itenirary = np.zeros(m, dtype = np.int16)
     for j in range(m):
-        x_n = (1 - stepsize)*x_now + np.matmul(phi(x_now), W_r.T) + np.matmul(u[j, :], W_in.T)
+        x_n = (1 - stepsize)*x_now + np.matmul(phi_piecewise(x_now), W_r.T) + np.matmul(u[j, :], W_in.T)
         # finds the location of the equillibrium that the state is closest to
         curr_reservoir_state[j, :] = x_n
         # print(np.argmax(x_n))
@@ -152,7 +165,7 @@ def propagate_itin(init_cond, u, W_r, W_in, stepsize = 0.2):
     curr_reservoir_state = np.zeros((m, n))
     itenirary = np.zeros(m, dtype = np.int16)
     for j in range(m):
-        x_n = (1 - stepsize)*x_now + np.matmul(phi(x_now), W_r.T) + np.matmul(u[j, :], W_in.T)
+        x_n = (1 - stepsize)*x_now + np.matmul(phi_piecewise(x_now), W_r.T) + np.matmul(u[j, :], W_in.T)
         # finds the location of the equillibrium that the state is closest to
         itenirary[j] = np.argmax(x_n)
         # print(np.argmax(x_n))
