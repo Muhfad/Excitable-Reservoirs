@@ -1,5 +1,6 @@
 #%%
 import numpy as np
+import tensorflow as tf
 
 from esn_reservoir import *
 
@@ -9,7 +10,7 @@ from esn_reservoir import *
 
 #%%
 def filter_36(u, y):
-    keep = (y == 8) | (y == 3)
+    keep = (y == 3) | (y == 6)
     u, y = u[keep], y[keep]
     y = y == 3
     return u, y
@@ -40,9 +41,6 @@ X, cache = reservoir(u_train, A, init_cond=init_cond)
 from sklearn.linear_model import LogisticRegression
 
 model = LogisticRegression(max_iter = 5000)
-def predict(model, X, y):
-    y_index = list(range(1, 10))
-    model.predict(X, y)
 model.fit(X, y_train)
 
 #%%
@@ -64,6 +62,7 @@ accuracy(y_test, y_test_pred)
 #%%
 # -------------------------------------------------------
 # Using the iteneraty instead of the entire state vector
+A = graph(1, 2, 1)
 init_cond = np.zeros(A.shape[0])
 init_cond[0] = 1
 X, cache = reservoir_itin(u_train, A, init_cond=init_cond)
@@ -76,8 +75,6 @@ model.fit(X, y_train)
 
 #%%
 # logisticRegression.predict(x_test[0].reshape(1,-1)
-def accuracy(y, y_pred):
-    return sum(y==y_pred)/y.shape[0]
 
 y_pred = model.predict(X)
 #%%
