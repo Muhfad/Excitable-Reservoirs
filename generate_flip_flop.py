@@ -14,7 +14,7 @@ from copy import copy
 import random
 from math import ceil
 #%%
-def sequence(N, q, n = 2, random_state = 42):
+def sequence(N, q, n = 2, amplitude = 1, random_state = 42):
     '''
     n (int): is the number of memory bits
     N (int): is the time interval/length of the sequence
