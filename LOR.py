@@ -5,6 +5,7 @@ trained RNN.
 # using simpson rule to calculate integrals
 #%%
 from scipy.integrate import simpson
+from scipy.integrate import odeint
 import numpy as np
 from numpy.linalg import norm, inv, det
 import matplotlib.pyplot as plt
@@ -176,7 +177,7 @@ def minors_of_curvatures(kappas):
 
 
 
-def LOR_rhs(f, eta, ksi, gamma):
+def LOR_rhs(ksi, eta, f, gamma):
     '''
     Evaluates the LOR right hand side at eta and ksi using the Frenet 
     frame of the curve gamma
@@ -195,8 +196,8 @@ def LOR_rhs(f, eta, ksi, gamma):
     kappas = curvatures(Frame, n_diffs)
     M = minors_of_curvatures(kappas)
     k1 = kappas[0]
-    Ngamma = Frenet[1:]
-    Phi = gamma0 + np.sum(np.multiply(ksi, Ngamma.T), axis = 1)
+    Ngamma = Frame[1:]
+    Phi = (gamma0 + np.sum(ksi * Ngamma.T, axis = 1)).flatten()
     Tf = np.inner(f(Phi), Frame[0])
     Nf = np.sum(f(Phi) * Ngamma, axis = 1)
 
@@ -206,7 +207,11 @@ def LOR_rhs(f, eta, ksi, gamma):
     # print(Nf.shape, Tf.shape, M, ksi.shape)
     ksi_dot = Nf - Tf * M * ksi/osculator
 
-    return eta_dot, ksi_dot
+
+    res = np.zeros(gamma['dim'])
+    res[0] = eta_dot
+    res[1:] = ksi_dot
+    return res
 
 
 
@@ -262,7 +267,7 @@ def diff_Frame(n_diffs):
 
 
 #%%
-t = np.linspace(-1, 1, 1000)
+t = np.linspace(-5, 5, 1000)
 x1 = np.sin(t)**2
 x1_prime = 3*t**2 - 10
 x2 = np.sin(t)**2 - np.cos(t)
@@ -272,26 +277,75 @@ x4 = np.tan(t)
 # x5 = t**2
 X = np.c_[x1, x2, x3, x4]
 X = X.T
-  # %%
-n_freqs = 10
+#%%
+n_freqs = 100
 gamma = FOURIER(X, t, n_freqs=n_freqs)
 # n = 5
 # k = n-1
-x_pred = evaluate_fourier(F,t)
+x_pred = evaluate_fourier(gamma,t)
 # for i in range(1, k):
 #     x_pred = np.r_[x_pred, evaluate_fourier(F,t, k=i)]
 #%%
-#%%
 plt.subplot(2, 1, 1)
-# plt.plot(t, X[0], label = 'actual')
-plt.plot(t, x_prime, label = 'actual')
-plt.plot(t, x_pred[0], label = f'approximated $f={n_freqs}$')
+plt.plot(t, X[3], label = 'actual')
+plt.plot(t, x_pred[3], label = f'approximated $f={n_freqs}$')
 plt.legend()
 plt.show()
 plt.subplot(2, 2, 1)
-# plt.plot(t, X[1], label = 'actual')
-plt.plot(t, y_prime, label = 'actual')
+plt.plot(t, X[1], label = 'actual')
 plt.plot(t, x_pred[1], label = f'approximated $f={n_freqs}$')
 plt.legend()
 plt.show()
 # %%
+f = lambda x, t: np.array([
+    (1-x[0]**2 - x[1]**2)*x[0] - x[1], 
+    (1-x[0]**2 - x[1]**2)*x[1] + x[0],
+    (1-x[2]**2 - x[3]**2)*x[2] - x[3], 
+    (1-x[2]**2 - x[3]**2)*x[3] + x[2]])
+g = lambda x: f(x, 0)
+
+def periodic_LOR(ksi, eta, f, gamma):
+    Y = LOR_rhs(ksi, eta, f, gamma)
+    return Y[1:]/Y[0]
+
+
+tspan = np.linspace(-4, 4, 1000)
+eta = 0
+y0 = np.array([1., 0.3, -1, 0.3])
+X = odeint(f, y0, tspan).T
+n_freqs = 10
+gamma = FOURIER(X, tspan, n_freqs=n_freqs)
+
+plt.plot(tspan, X[0], label = '$y_1$')
+plt.plot(tspan, X[1], label = '$y_2$')
+plt.plot(tspan, X[2], label = '$y_3$')
+plt.plot(tspan, X[3], label = '$y_4$')
+plt.legend()
+plt.show()
+#%%
+eta = np.linspace(0, 3*np.pi, 1000)
+ksi0 = np.array([0, 0, 0])
+#%%
+Y = odeint(periodic_LOR, ksi0, eta, args=(g, gamma)).T
+#%%
+n_start = 0
+n_end = 100
+plt.subplot(3, 1, 1)
+plt.plot(tspan[n_start:n_end], Y[0][n_start:n_end], label = '$y_1$')
+plt.legend()
+plt.subplot(3, 1, 2)
+plt.plot(tspan[n_start:n_end], Y[1][n_start:n_end], label = '$y_2$')
+plt.legend()
+plt.subplot(3, 1, 3)
+plt.plot(tspan[n_start:n_end], Y[2][n_start:n_end], label = '$y_3$')
+plt.legend()
+plt.show()
+# %%
+
+def inverse_LOR(Y, gamma):
+    '''
+    Converts LOR cordinates back to the original cordinate
+    '''
+    eta = Y[0]
+    ksi = Y[1:]
+
